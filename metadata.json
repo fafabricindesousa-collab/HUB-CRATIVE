@@ -1,0 +1,6 @@
+{
+  "name": "Creative Hub",
+  "description": "Hub centralizado de produção de criativos de marketing para desktop e mobile com roteiros, gravação de áudio, teleprompter e sincronização.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

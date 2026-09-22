@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validations
+    function isValidProject(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.code is string && data.code.size() > 0 && data.code.size() <= 10
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidCreative(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.code is string && data.code.size() > 0 && data.code.size() <= 20
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 150
+        && data.status is string && (data.status in ['idea', 'scripted', 'recording', 'done', 'approved'])
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidScene(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.creativeId is string && data.creativeId.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.order is number
+        && data.speech is string && data.speech.size() <= 10000
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidAsset(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.creativeId is string && data.creativeId.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.type is string && (data.type in ['audio', 'video', 'image', 'document'])
+        && data.originalName is string && data.originalName.size() <= 255
+        && data.url is string && data.url.size() <= 10000
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidNote(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.creativeId is string && data.creativeId.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.content is string && data.content.size() <= 50000
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    function isValidHistory(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.creativeId is string && data.creativeId.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.description is string && data.description.size() <= 500
+        && data.ownerId is string && data.ownerId == request.auth.uid;
+    }
+
+    // Projects collection
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming());
+      allow update: if isSignedIn() && isValidId(projectId)
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId
+        && isValidProject(incoming());
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+
+      // Creatives subcollection
+      match /creatives/{creativeId} {
+        allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && isValidId(creativeId) && isValidCreative(incoming());
+        allow update: if isSignedIn() && isValidId(creativeId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == existing().ownerId
+          && isValidCreative(incoming());
+        allow delete: if isSignedIn() && isValidId(creativeId) && existing().ownerId == request.auth.uid;
+
+        // Scenes subcollection
+        match /scenes/{sceneId} {
+          allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+          allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+          allow create: if isSignedIn() && isValidId(sceneId) && isValidScene(incoming());
+          allow update: if isSignedIn() && isValidId(sceneId)
+            && existing().ownerId == request.auth.uid
+            && incoming().ownerId == existing().ownerId
+            && isValidScene(incoming());
+          allow delete: if isSignedIn() && isValidId(sceneId) && existing().ownerId == request.auth.uid;
+        }
+
+        // Assets subcollection
+        match /assets/{assetId} {
+          allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+          allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+          allow create: if isSignedIn() && isValidId(assetId) && isValidAsset(incoming());
+          allow update: if isSignedIn() && isValidId(assetId)
+            && existing().ownerId == request.auth.uid
+            && incoming().ownerId == existing().ownerId
+            && isValidAsset(incoming());
+          allow delete: if isSignedIn() && isValidId(assetId) && existing().ownerId == request.auth.uid;
+        }
+
+        // Notes subcollection
+        match /notes/{noteId} {
+          allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+          allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+          allow create: if isSignedIn() && isValidId(noteId) && isValidNote(incoming());
+          allow update: if isSignedIn() && isValidId(noteId)
+            && existing().ownerId == request.auth.uid
+            && incoming().ownerId == existing().ownerId
+            && isValidNote(incoming());
+          allow delete: if isSignedIn() && isValidId(noteId) && existing().ownerId == request.auth.uid;
+        }
+
+        // History subcollection
+        match /history/{historyId} {
+          allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || resource == null);
+          allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+          allow create: if isSignedIn() && isValidId(historyId) && isValidHistory(incoming());
+          allow update: if isSignedIn() && isValidId(historyId)
+            && existing().ownerId == request.auth.uid
+            && incoming().ownerId == existing().ownerId
+            && isValidHistory(incoming());
+          allow delete: if isSignedIn() && isValidId(historyId) && existing().ownerId == request.auth.uid;
+        }
+      }
+    }
+
+    // Connection test document
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

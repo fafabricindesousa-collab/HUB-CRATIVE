@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Marketing creative project group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "code": { "type": "string", "maxLength": 10 },
+        "description": { "type": "string", "maxLength": 500 },
+        "color": { "type": "string", "maxLength": 30 },
+        "creativeCounter": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "code", "ownerId"]
+    },
+    "Creative": {
+      "title": "Creative",
+      "description": "An individual video or script creative",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 20 },
+        "title": { "type": "string", "maxLength": 150 },
+        "hook": { "type": "string", "maxLength": 500 },
+        "script": { "type": "string", "maxLength": 50000 },
+        "status": {
+          "type": "string",
+          "enum": ["idea", "scripted", "recording", "done", "approved"]
+        },
+        "tags": { "type": "array" },
+        "scenesCount": { "type": "number" },
+        "hasAudio": { "type": "boolean" },
+        "approvedAssetsCount": { "type": "number" },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "projectId", "code", "title", "status", "ownerId"]
+    },
+    "Scene": {
+      "title": "Scene",
+      "description": "Individual scene breakdown for audio and visual recording",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "creativeId": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "order": { "type": "number" },
+        "title": { "type": "string", "maxLength": 100 },
+        "speech": { "type": "string", "maxLength": 10000 },
+        "visualInstruction": { "type": "string", "maxLength": 2000 },
+        "brollInstruction": { "type": "string", "maxLength": 2000 },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "creativeId", "projectId", "order", "speech", "ownerId"]
+    },
+    "Asset": {
+      "title": "Asset",
+      "description": "Media asset such as audio recording, video clip, image or document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "creativeId": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "sceneId": { "type": "string", "maxLength": 128 },
+        "type": {
+          "type": "string",
+          "enum": ["audio", "video", "image", "document"]
+        },
+        "originalName": { "type": "string", "maxLength": 255 },
+        "url": { "type": "string", "maxLength": 10000 },
+        "storagePath": { "type": "string", "maxLength": 500 },
+        "duration": { "type": "string", "maxLength": 20 },
+        "fileSize": { "type": "number" },
+        "isApproved": { "type": "boolean" },
+        "source": { "type": "string", "enum": ["upload", "recorded", "camera"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "creativeId", "projectId", "type", "originalName", "url", "ownerId"]
+    },
+    "ProductionNote": {
+      "title": "ProductionNote",
+      "description": "Freeform production note for a creative",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "creativeId": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "maxLength": 50000 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "creativeId", "projectId", "content", "ownerId"]
+    },
+    "HistoryEvent": {
+      "title": "HistoryEvent",
+      "description": "Audit and activity log of changes made to a creative",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "creativeId": { "type": "string", "maxLength": 128 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string" },
+        "description": { "type": "string", "maxLength": 500 },
+        "author": { "type": "string", "maxLength": 100 },
+        "ownerId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "creativeId", "projectId", "timestamp", "description", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Collection of projects"
+    },
+    "/projects/{projectId}/creatives/{creativeId}": {
+      "schema": "Creative",
+      "description": "Creatives associated with a project"
+    },
+    "/projects/{projectId}/creatives/{creativeId}/scenes/{sceneId}": {
+      "schema": "Scene",
+      "description": "Scene breakdown of a creative"
+    },
+    "/projects/{projectId}/creatives/{creativeId}/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Media assets and recordings of a creative"
+    },
+    "/projects/{projectId}/creatives/{creativeId}/notes/{noteId}": {
+      "schema": "ProductionNote",
+      "description": "Production notes of a creative"
+    },
+    "/projects/{projectId}/creatives/{creativeId}/history/{historyId}": {
+      "schema": "HistoryEvent",
+      "description": "Activity history of a creative"
+    }
+  }
+}
